@@ -167,20 +167,20 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif
 .review-item-text { font-size:13px; color:var(--text-sub); line-height:1.6; }
 .review-empty { text-align:center; padding:24px; color:var(--text-muted); font-size:13px; }
 /* 카드에 리뷰 버튼 */
-.review-chip { display:inline-flex; align-items:center; gap:3px; background:var(--tag-bg); color:var(--text-sub); border:none; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer; margin-top:6px; }
-.review-chip.has-review { color:var(--primary); background:var(--primary-light); }
+.review-chip { display:inline-flex; align-items:center; gap:3px; background:#FFF0EB; color:#E8501A; border:1.5px solid #F57D50; border-radius:6px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; margin-top:6px; }
+.review-chip.has-review { background:#E8501A; color:white; border-color:#E8501A; }
 /* 댓글 */
 .comment-section { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
-.comment-toggle { background:none; border:none; font-size:11px; font-weight:700; color:var(--text-muted); cursor:pointer; padding:0; display:flex; align-items:center; gap:4px; }
+.comment-toggle { background:none; border:none; font-size:12px; font-weight:700; color:#5F5E5A; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px; }
 .comment-toggle:hover { color:var(--primary); }
 .comment-list { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
-.comment-item { background:var(--bg); border-radius:8px; padding:8px 10px; display:flex; gap:8px; align-items:flex-start; }
+.comment-item { background:#E8E6E1; border-radius:8px; padding:8px 10px; display:flex; gap:8px; align-items:flex-start; }
 .comment-bubble { flex:1; }
-.comment-name { font-size:11px; font-weight:700; color:var(--text); }
-.comment-text { font-size:12px; color:var(--text-sub); margin-top:2px; line-height:1.5; }
-.comment-date { font-size:10px; color:var(--text-muted); margin-top:2px; }
+.comment-name { font-size:11px; font-weight:700; color:#2C2C2A; }
+.comment-text { font-size:12px; color:#2C2C2A; margin-top:2px; line-height:1.5; font-weight:500; }
+.comment-date { font-size:10px; color:#8A7E76; margin-top:2px; }
 .comment-form { display:flex; gap:6px; margin-top:8px; }
-.comment-input { flex:1; padding:7px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:12px; color:var(--text); background:var(--card); outline:none; font-family:inherit; }
+.comment-input { flex:1; padding:7px 10px; border:1.5px solid #C4BCB5; border-radius:var(--radius-sm); font-size:12px; color:var(--text); background:var(--card); outline:none; font-family:inherit; }
 .comment-input:focus { border-color:var(--primary); }
 .comment-submit { background:var(--primary); color:white; border:none; padding:7px 12px; border-radius:var(--radius-sm); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
 
@@ -569,9 +569,8 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif
           <button class="star-btn" onclick="setStar(4)">★</button>
           <button class="star-btn" onclick="setStar(5)">★</button>
         </div>
-        <input class="review-name-input" id="rv-writer" placeholder="이름 (예: Jake)">
         <textarea class="review-text-input" id="rv-comment" placeholder="한 줄 리뷰를 남겨주세요 😋"></textarea>
-        <button class="review-submit-btn" id="rv-submit-btn" onclick="submitReview()">리뷰 등록</button>
+        <button class="review-submit-btn" id="rv-submit-btn" onclick="submitReview()">익명으로 등록</button>
       </div>
       <!-- 리뷰 목록 -->
       <div id="rv-list"></div>
@@ -727,7 +726,7 @@ function renderList(){
       <div class="rest-info">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
           <div class="rest-name">${r.name}</div>
-          <button class="fav-btn ${r.fav?'active':''}" style="position:static;flex-shrink:0;opacity:${r.fav?'1':'0.35'}" onclick="toggleFav(event,'${r.id}')">${r.fav?'❤️':'🤍'}</button>
+          <button class="fav-btn ${r.fav?'active':''}" style="position:static;flex-shrink:0;opacity:1;font-size:18px;background:${r.fav?'#FFF0EB':'#F0EDE8'};border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;" onclick="toggleFav(event,'${r.id}')">${r.fav?'❤️':'🤍'}</button>
         </div>
         <div class="rest-menu">${r.menu}</div>
         <div class="rest-tags">
@@ -831,8 +830,7 @@ function renderReviews(reviews,restId){
         <div id="cmt-area-${rv.id}" style="display:none">
           <div class="comment-list" id="cmt-list-${rv.id}"></div>
           <div class="comment-form">
-            <input class="comment-input" id="cmt-name-${rv.id}" placeholder="이름">
-            <input class="comment-input" id="cmt-text-${rv.id}" placeholder="댓글 달기..." style="flex:2">
+            <input class="comment-input" id="cmt-text-${rv.id}" placeholder="익명 댓글 달기..." style="flex:1">
             <button class="comment-submit" onclick="submitComment('${restId}','${rv.id}')">등록</button>
           </div>
         </div>
@@ -875,15 +873,13 @@ function toggleComments(restId,reviewId){
 }
 
 async function submitComment(restId,reviewId){
-  const nameEl=document.getElementById(`cmt-name-${reviewId}`);
   const textEl=document.getElementById(`cmt-text-${reviewId}`);
-  const writer=nameEl.value.trim()||'익명';
   const text=textEl.value.trim();
   if(!text)return;
   try {
     const db=window._db;
     const cCol=window._fsCollection(db,`restaurants/${restId}/reviews/${reviewId}/comments`);
-    await window._fsAddDoc(cCol,{writer,text,createdAt:Date.now()});
+    await window._fsAddDoc(cCol,{writer:'익명',text,createdAt:Date.now()});
     textEl.value='';
   } catch(e){alert('댓글 등록 실패: '+e.message);}
 }
@@ -891,18 +887,17 @@ async function submitComment(restId,reviewId){
 async function submitReview(){
   if(!currentReviewRestId)return;
   if(!currentStar){alert('별점을 선택해주세요!');return;}
-  const writer=document.getElementById('rv-writer').value.trim()||'익명';
   const comment=document.getElementById('rv-comment').value.trim();
   const btn=document.getElementById('rv-submit-btn');
   btn.disabled=true;btn.textContent='등록 중...';
   try {
     const db=window._db;
     const reviewCol=window._fsCollection(db,`restaurants/${currentReviewRestId}/reviews`);
-    await window._fsAddDoc(reviewCol,{writer,comment,rating:currentStar,createdAt:Date.now()});
+    await window._fsAddDoc(reviewCol,{writer:'익명',comment,rating:currentStar,createdAt:Date.now()});
     document.getElementById('rv-comment').value='';
     currentStar=0;updateStarUI(0);
   } catch(e){alert('등록 실패: '+e.message);}
-  btn.disabled=false;btn.textContent='리뷰 등록';
+  btn.disabled=false;btn.textContent='익명으로 등록';
 }
 
 // ===================== RANDOM =====================
