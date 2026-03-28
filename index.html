@@ -169,6 +169,20 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif
 /* 카드에 리뷰 버튼 */
 .review-chip { display:inline-flex; align-items:center; gap:3px; background:var(--tag-bg); color:var(--text-sub); border:none; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer; margin-top:6px; }
 .review-chip.has-review { color:var(--primary); background:var(--primary-light); }
+/* 댓글 */
+.comment-section { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+.comment-toggle { background:none; border:none; font-size:11px; font-weight:700; color:var(--text-muted); cursor:pointer; padding:0; display:flex; align-items:center; gap:4px; }
+.comment-toggle:hover { color:var(--primary); }
+.comment-list { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+.comment-item { background:var(--bg); border-radius:8px; padding:8px 10px; display:flex; gap:8px; align-items:flex-start; }
+.comment-bubble { flex:1; }
+.comment-name { font-size:11px; font-weight:700; color:var(--text); }
+.comment-text { font-size:12px; color:var(--text-sub); margin-top:2px; line-height:1.5; }
+.comment-date { font-size:10px; color:var(--text-muted); margin-top:2px; }
+.comment-form { display:flex; gap:6px; margin-top:8px; }
+.comment-input { flex:1; padding:7px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:12px; color:var(--text); background:var(--card); outline:none; font-family:inherit; }
+.comment-input:focus { border-color:var(--primary); }
+.comment-submit { background:var(--primary); color:white; border:none; padding:7px 12px; border-radius:var(--radius-sm); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
 
 /* 시간 피커 */
 .tpicker-wrap { display:flex; align-items:center; gap:3px; background:var(--card); border-radius:var(--radius-sm); border:1.5px solid var(--border); padding:8px 12px; }
@@ -788,25 +802,20 @@ function renderReviews(reviews,restId){
   if(!r)return;
   const cnt=reviews.length;
   const avg=cnt>0?(reviews.reduce((s,rv)=>s+(rv.rating||0),0)/cnt):0;
-  // 카드 캐시 업데이트
   r._reviewCount=cnt; r._avgRating=avg;
-  // 평균 표시
   const avgEl=document.getElementById('rv-avg');
   if(cnt>0){
     avgEl.style.display='flex';
     document.getElementById('rv-score').textContent=avg.toFixed(1);
     document.getElementById('rv-stars').textContent='★'.repeat(Math.round(avg))+'☆'.repeat(5-Math.round(avg));
     document.getElementById('rv-count').textContent=`리뷰 ${cnt}개`;
-  } else {
-    avgEl.style.display='none';
-  }
-  // 리뷰 목록
+  } else { avgEl.style.display='none'; }
   const listEl=document.getElementById('rv-list');
-  if(!cnt){listEl.innerHTML='<div class="review-empty">아직 리뷰가 없어요. 첫 리뷰를 남겨주세요! 🍽️</div>';return;}
+  if(!cnt){listEl.innerHTML='<div class="review-empty">아직 리뷰가 없어요. 첫 리뷰를 남겨주세요! 🍽️</div>';renderList();return;}
   listEl.innerHTML=reviews.map(rv=>{
     const stars='★'.repeat(rv.rating||0)+'☆'.repeat(5-(rv.rating||0));
     const date=rv.createdAt?new Date(rv.createdAt).toLocaleDateString('ko-KR',{month:'short',day:'numeric'}):'';
-    return `<div class="review-item">
+    return `<div class="review-item" id="rv-item-${rv.id}">
       <div class="review-item-header">
         <div class="review-item-name">${rv.writer||'익명'}</div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -815,10 +824,68 @@ function renderReviews(reviews,restId){
         </div>
       </div>
       ${rv.comment?`<div class="review-item-text">${rv.comment}</div>`:''}
+      <div class="comment-section">
+        <button class="comment-toggle" onclick="toggleComments('${restId}','${rv.id}')">
+          💬 댓글 <span id="cmtcnt-${rv.id}"></span>
+        </button>
+        <div id="cmt-area-${rv.id}" style="display:none">
+          <div class="comment-list" id="cmt-list-${rv.id}"></div>
+          <div class="comment-form">
+            <input class="comment-input" id="cmt-name-${rv.id}" placeholder="이름">
+            <input class="comment-input" id="cmt-text-${rv.id}" placeholder="댓글 달기..." style="flex:2">
+            <button class="comment-submit" onclick="submitComment('${restId}','${rv.id}')">등록</button>
+          </div>
+        </div>
+      </div>
     </div>`;
   }).join('');
-  // 리스트 카드도 갱신
   renderList();
+}
+
+const commentUnsubs={};
+function toggleComments(restId,reviewId){
+  const area=document.getElementById(`cmt-area-${reviewId}`);
+  const isHidden=area.style.display==='none';
+  area.style.display=isHidden?'block':'none';
+  if(isHidden && !commentUnsubs[reviewId]){
+    const db=window._db;
+    const cCol=window._fsCollection(db,`restaurants/${restId}/reviews/${reviewId}/comments`);
+    commentUnsubs[reviewId]=window._fsOnSnapshot(cCol,(snap)=>{
+      const cmts=[];
+      snap.forEach(d=>cmts.push({id:d.id,...d.data()}));
+      cmts.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+      const listEl=document.getElementById(`cmt-list-${reviewId}`);
+      const cntEl=document.getElementById(`cmtcnt-${reviewId}`);
+      if(cntEl)cntEl.textContent=cmts.length?`(${cmts.length})`:'';
+      if(!listEl)return;
+      listEl.innerHTML=cmts.map(c=>{
+        const date=c.createdAt?new Date(c.createdAt).toLocaleDateString('ko-KR',{month:'short',day:'numeric'}):'';
+        return `<div class="comment-item">
+          <div class="comment-bubble">
+            <div class="comment-name">${c.writer||'익명'} <span class="comment-date">${date}</span></div>
+            <div class="comment-text">${c.text||''}</div>
+          </div>
+        </div>`;
+      }).join('');
+    });
+  } else if(!isHidden && commentUnsubs[reviewId]){
+    commentUnsubs[reviewId]();
+    delete commentUnsubs[reviewId];
+  }
+}
+
+async function submitComment(restId,reviewId){
+  const nameEl=document.getElementById(`cmt-name-${reviewId}`);
+  const textEl=document.getElementById(`cmt-text-${reviewId}`);
+  const writer=nameEl.value.trim()||'익명';
+  const text=textEl.value.trim();
+  if(!text)return;
+  try {
+    const db=window._db;
+    const cCol=window._fsCollection(db,`restaurants/${restId}/reviews/${reviewId}/comments`);
+    await window._fsAddDoc(cCol,{writer,text,createdAt:Date.now()});
+    textEl.value='';
+  } catch(e){alert('댓글 등록 실패: '+e.message);}
 }
 
 async function submitReview(){
