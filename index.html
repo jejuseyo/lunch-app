@@ -707,27 +707,30 @@ function renderList(){
   list.innerHTML=f.map(r=>{
     const avg=r._avgRating||0;
     const cnt=r._reviewCount||0;
-    const stars=avg>0?'★'.repeat(Math.round(avg)):'';
     return `
     <div class="restaurant-card" id="card-${r.id}" onclick="selectCard('${r.id}')">
       <div class="rest-emoji">${r.emoji}</div>
       <div class="rest-info">
-        <div class="rest-name">${r.name}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div class="rest-name">${r.name}</div>
+          <button class="fav-btn ${r.fav?'active':''}" style="position:static;flex-shrink:0;opacity:${r.fav?'1':'0.35'}" onclick="toggleFav(event,'${r.id}')">${r.fav?'❤️':'🤍'}</button>
+        </div>
         <div class="rest-menu">${r.menu}</div>
         <div class="rest-tags">
           ${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}
           ${r.breakTime?'<span class="tag" style="background:#FEF3F2;color:#B91C1C;">브레이크</span>':''}
         </div>
-        <button class="review-chip ${cnt>0?'has-review':''}" onclick="openReviewModal(event,'${r.id}')">
-          ${cnt>0?`<span style="color:#FBBF24">★</span> ${avg.toFixed(1)} (${cnt})`:'💬 리뷰 남기기'}
-        </button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+          <button class="review-chip ${cnt>0?'has-review':''}" onclick="openReviewModal(event,'${r.id}')">
+            ${cnt>0?`<span style="color:#FBBF24">★</span> ${avg.toFixed(1)} (${cnt})`:'💬 리뷰'}
+          </button>
+          <div style="text-align:right">
+            <div class="distance">${r.distance!==undefined?formatDist(r.distance):'-'}</div>
+            <div class="walk-time">${r.distance!==undefined?'🚶 '+walkTime(r.distance):''}</div>
+            <div class="price-badge">${r.price}</div>
+          </div>
+        </div>
       </div>
-      <div class="rest-meta">
-        <div class="distance">${r.distance!==undefined?formatDist(r.distance):'-'}</div>
-        <div class="walk-time">${r.distance!==undefined?'🚶 '+walkTime(r.distance):''}</div>
-        <div class="price-badge">${r.price}</div>
-      </div>
-      <button class="fav-btn ${r.fav?'active':''}" onclick="toggleFav(event,'${r.id}')">${r.fav?'❤️':'🤍'}</button>
     </div>`;
   }).join('');
 }
