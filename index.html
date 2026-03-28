@@ -133,6 +133,43 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif
 .edit-form { display:flex; flex-direction:column; gap:12px; }
 .edit-save-btn { width:100%; background:var(--primary); color:white; border:none; padding:13px; border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; margin-top:4px; }
 
+/* 리뷰 모달 */
+.review-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:600; align-items:flex-end; justify-content:center; }
+.review-modal-overlay.show { display:flex; }
+.review-modal { background:var(--bg); border-radius:24px 24px 0 0; width:100%; max-width:430px; max-height:88vh; display:flex; flex-direction:column; }
+.review-modal-header { background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.review-modal-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }
+.review-modal-name { font-size:17px; font-weight:800; color:var(--text); letter-spacing:-0.4px; }
+.review-modal-sub { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.review-modal-close { background:var(--tag-bg); border:none; width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; color:var(--text-sub); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.review-avg { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.review-avg-score { font-size:28px; font-weight:800; color:var(--text); }
+.review-avg-stars { font-size:18px; color:#FBBF24; letter-spacing:1px; }
+.review-avg-count { font-size:12px; color:var(--text-muted); }
+.review-modal-body { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+/* 리뷰 작성 폼 */
+.review-form { background:var(--card); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; gap:10px; }
+.star-picker { display:flex; gap:6px; }
+.star-btn { font-size:26px; background:none; border:none; cursor:pointer; opacity:0.3; transition:opacity 0.1s, transform 0.1s; }
+.star-btn.active { opacity:1; transform:scale(1.15); }
+.review-name-input { padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; color:var(--text); background:var(--bg); outline:none; font-family:inherit; }
+.review-name-input:focus { border-color:var(--primary); }
+.review-text-input { padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; color:var(--text); background:var(--bg); outline:none; font-family:inherit; resize:none; height:72px; }
+.review-text-input:focus { border-color:var(--primary); }
+.review-submit-btn { background:var(--primary); color:white; border:none; padding:11px; border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; }
+.review-submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
+/* 리뷰 아이템 */
+.review-item { background:var(--card); border-radius:var(--radius-sm); padding:12px 14px; }
+.review-item-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.review-item-name { font-size:13px; font-weight:700; color:var(--text); }
+.review-item-stars { font-size:13px; color:#FBBF24; }
+.review-item-date { font-size:11px; color:var(--text-muted); }
+.review-item-text { font-size:13px; color:var(--text-sub); line-height:1.6; }
+.review-empty { text-align:center; padding:24px; color:var(--text-muted); font-size:13px; }
+/* 카드에 리뷰 버튼 */
+.review-chip { display:inline-flex; align-items:center; gap:3px; background:var(--tag-bg); color:var(--text-sub); border:none; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:600; cursor:pointer; margin-top:6px; }
+.review-chip.has-review { color:var(--primary); background:var(--primary-light); }
+
 /* 시간 피커 */
 .tpicker-wrap { display:flex; align-items:center; gap:3px; background:var(--card); border-radius:var(--radius-sm); border:1.5px solid var(--border); padding:8px 12px; }
 .tpicker-col { display:flex; flex-direction:column; align-items:center; gap:1px; }
@@ -488,6 +525,79 @@ body { font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif
   </div>
 </div>
 
+<!-- 리뷰 모달 -->
+<div class="review-modal-overlay" id="review-modal">
+  <div class="review-modal">
+    <div class="review-modal-header">
+      <div class="review-modal-title">
+        <div>
+          <div class="review-modal-name" id="rv-name"></div>
+          <div class="review-modal-sub" id="rv-sub"></div>
+        </div>
+        <button class="review-modal-close" onclick="closeReviewModal()">✕</button>
+      </div>
+      <div class="review-avg" id="rv-avg" style="display:none">
+        <div class="review-avg-score" id="rv-score"></div>
+        <div>
+          <div class="review-avg-stars" id="rv-stars"></div>
+          <div class="review-avg-count" id="rv-count"></div>
+        </div>
+      </div>
+    </div>
+    <div class="review-modal-body">
+      <!-- 작성 폼 -->
+      <div class="review-form">
+        <div class="form-label">별점</div>
+        <div class="star-picker" id="star-picker">
+          <button class="star-btn" onclick="setStar(1)">★</button>
+          <button class="star-btn" onclick="setStar(2)">★</button>
+          <button class="star-btn" onclick="setStar(3)">★</button>
+          <button class="star-btn" onclick="setStar(4)">★</button>
+          <button class="star-btn" onclick="setStar(5)">★</button>
+        </div>
+        <input class="review-name-input" id="rv-writer" placeholder="이름 (예: Jake)">
+        <textarea class="review-text-input" id="rv-comment" placeholder="한 줄 리뷰를 남겨주세요 😋"></textarea>
+        <button class="review-submit-btn" id="rv-submit-btn" onclick="submitReview()">리뷰 등록</button>
+      </div>
+      <!-- 리뷰 목록 -->
+      <div id="rv-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCfRb7sXfIKzWNzq2drRC3h6F4pinZzrvs",
+  authDomain: "lunch-app-37a51.firebaseapp.com",
+  projectId: "lunch-app-37a51",
+  storageBucket: "lunch-app-37a51.firebasestorage.app",
+  messagingSenderId: "981089800481",
+  appId: "1:981089800481:web:10838fe83ef86b16aa6e60"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const COL = 'restaurants';
+
+// Firestore CRUD — 전역에 노출
+window._db = db;
+window._col = COL;
+window._fsAddDoc = addDoc;
+window._fsUpdateDoc = updateDoc;
+window._fsDeleteDoc = deleteDoc;
+window._fsDoc = doc;
+window._fsCollection = collection;
+window._fsDocs = getDocs;
+window._fsOnSnapshot = onSnapshot;
+window._fsSetDoc = setDoc;
+window._dbReady = true;
+window.dispatchEvent(new Event('db-ready'));
+</script>
+
 <!-- 카카오맵 SDK -->
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c0bf51b41fe97ba9ad687407c4436d48&libraries=services"></script>
 <script>
@@ -495,21 +605,65 @@ const ADMIN_PIN = '1234';
 const KAKAO_KEY = 'c0bf51b41fe97ba9ad687407c4436d48';
 
 const DEFAULTS = [
-  {id:1,name:'서호우동가게',emoji:'🍜',menu:'붓카케우동, 돈까스세트, 가마타마우동',category:'일식',tags:['혼밥OK','빠름','세트메뉴'],price:'₩₩',lat:33.25300,lng:126.51293,hours:'11:30 - 19:50',breakTime:null,fav:false},
-  {id:2,name:'돈수육',emoji:'🥩',menu:'돔베고기, 고사리육개장, 제주수육정식',category:'한식',tags:['혼밥OK','제주특산'],price:'₩₩',lat:33.25369,lng:126.51179,hours:'10:30 - 22:00',breakTime:null,fav:false},
-  {id:3,name:'동백카츠',emoji:'🍱',menu:'치즈돈까스, 왕돈까스, 우동세트',category:'일식',tags:['혼밥OK','브레이크있음'],price:'₩₩',lat:33.25319,lng:126.50396,hours:'11:00 - 20:30',breakTime:'15:00 - 17:00',fav:false},
-  {id:4,name:'남호식당',emoji:'🔥',menu:'흑돼지구이, 삼겹살, 오겹살',category:'한식',tags:['고기','혼밥불가'],price:'₩₩',lat:33.25252,lng:126.50548,hours:'11:30 - 21:30',breakTime:null,fav:false},
-  {id:5,name:'카페텐저린',emoji:'☕',menu:'텐저린브런치, 에그인헬, 크루아상세트',category:'카페',tags:['브런치','뷰맛집','혼밥OK'],price:'₩₩₩',lat:33.23625,lng:126.50859,hours:'09:00 - 18:00',breakTime:null,fav:false}
+  {name:'서호우동가게',emoji:'🍜',menu:'붓카케우동, 돈까스세트, 가마타마우동',category:'일식',tags:['혼밥OK','빠름','세트메뉴'],price:'₩₩',lat:33.25300,lng:126.51293,hours:'11:30 - 19:50',breakTime:null,fav:false},
+  {name:'돈수육',emoji:'🥩',menu:'돔베고기, 고사리육개장, 제주수육정식',category:'한식',tags:['혼밥OK','제주특산'],price:'₩₩',lat:33.25369,lng:126.51179,hours:'10:30 - 22:00',breakTime:null,fav:false},
+  {name:'동백카츠',emoji:'🍱',menu:'치즈돈까스, 왕돈까스, 우동세트',category:'일식',tags:['혼밥OK','브레이크있음'],price:'₩₩',lat:33.25319,lng:126.50396,hours:'11:00 - 20:30',breakTime:'15:00 - 17:00',fav:false},
+  {name:'남호식당',emoji:'🔥',menu:'흑돼지구이, 삼겹살, 오겹살',category:'한식',tags:['고기','혼밥불가'],price:'₩₩',lat:33.25252,lng:126.50548,hours:'11:30 - 21:30',breakTime:null,fav:false},
+  {name:'카페텐저린',emoji:'☕',menu:'텐저린브런치, 에그인헬, 크루아상세트',category:'카페',tags:['브런치','뷰맛집','혼밥OK'],price:'₩₩₩',lat:33.23625,lng:126.50859,hours:'09:00 - 18:00',breakTime:null,fav:false}
 ];
 
-function loadData(){try{const s=localStorage.getItem('lunch_v2');if(s)return JSON.parse(s);}catch(e){}return JSON.parse(JSON.stringify(DEFAULTS));}
-function saveData(){try{localStorage.setItem('lunch_v2',JSON.stringify(RESTAURANTS));}catch(e){}}
-
-let RESTAURANTS=loadData();
+let RESTAURANTS=[];
 let userLat=null,userLng=null,currentView='list',activeFilter='all',showFavsOnly=false;
 let kakaoMap=null,kakaoOverlays=[],pickerMapObj=null,pickerMarker=null;
 let adminUnlocked=false,selectedEmoji='🍜',foundLat=null,foundLng=null;
 const EMOJIS=['🍜','🥩','🍱','🔥','☕','🍔','🍲','🦑','🥗','🍣','🍛','🥘','🫕','🌮','🍕','🧆'];
+
+// ===================== FIRESTORE =====================
+async function loadFromFirestore(){
+  try {
+    const db=window._db, col=window._col;
+    // 첫 실행 체크 — 데이터 없으면 기본값 넣기
+    const snap=await window._fsDocs(window._fsCollection(db,col));
+    if(snap.empty){
+      for(const r of DEFAULTS){
+        await window._fsAddDoc(window._fsCollection(db,col),r);
+      }
+    }
+    // 실시간 리스너 시작
+    window._fsOnSnapshot(window._fsCollection(db,col), (snapshot)=>{
+      RESTAURANTS=[];
+      snapshot.forEach(d=>RESTAURANTS.push({id:d.id,...d.data()}));
+      updateDistances();
+      renderFilters();
+      renderList();
+      if(kakaoMap){
+        // 지도 마커 전체 갱신
+        kakaoOverlays.forEach(o=>o.overlay.setMap(null));
+        kakaoOverlays=[];
+        RESTAURANTS.forEach(r=>addKakaoMarker(r));
+        renderMapCards();
+      }
+      if(adminUnlocked)renderAdminList();
+      document.getElementById('loading-bar').style.display='none';
+    });
+  } catch(e){
+    console.error('Firestore error:',e);
+    RESTAURANTS=JSON.parse(JSON.stringify(DEFAULTS)).map((r,i)=>({...r,id:'default_'+i}));
+    updateDistances();renderFilters();renderList();
+    document.getElementById('loading-bar').style.display='none';
+  }
+}
+
+async function fsAdd(data){
+  const ref=await window._fsAddDoc(window._fsCollection(window._db,window._col),data);
+  return ref.id;
+}
+async function fsUpdate(id,data){
+  await window._fsUpdateDoc(window._fsDoc(window._db,window._col,id),data);
+}
+async function fsDelete(id){
+  await window._fsDeleteDoc(window._fsDoc(window._db,window._col,id));
+}
 
 // ===================== UTIL =====================
 function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return Math.round(R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));}
@@ -550,8 +704,12 @@ function renderList(){
   const nr=document.getElementById('no-results');
   if(!f.length){list.innerHTML='';nr.classList.add('show');return;}
   nr.classList.remove('show');
-  list.innerHTML=f.map(r=>`
-    <div class="restaurant-card" id="card-${r.id}" onclick="selectCard(${r.id})">
+  list.innerHTML=f.map(r=>{
+    const avg=r._avgRating||0;
+    const cnt=r._reviewCount||0;
+    const stars=avg>0?'★'.repeat(Math.round(avg)):'';
+    return `
+    <div class="restaurant-card" id="card-${r.id}" onclick="selectCard('${r.id}')">
       <div class="rest-emoji">${r.emoji}</div>
       <div class="rest-info">
         <div class="rest-name">${r.name}</div>
@@ -560,18 +718,122 @@ function renderList(){
           ${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}
           ${r.breakTime?'<span class="tag" style="background:#FEF3F2;color:#B91C1C;">브레이크</span>':''}
         </div>
+        <button class="review-chip ${cnt>0?'has-review':''}" onclick="openReviewModal(event,'${r.id}')">
+          ${cnt>0?`<span style="color:#FBBF24">★</span> ${avg.toFixed(1)} (${cnt})`:'💬 리뷰 남기기'}
+        </button>
       </div>
       <div class="rest-meta">
         <div class="distance">${r.distance!==undefined?formatDist(r.distance):'-'}</div>
         <div class="walk-time">${r.distance!==undefined?'🚶 '+walkTime(r.distance):''}</div>
         <div class="price-badge">${r.price}</div>
       </div>
-      <button class="fav-btn ${r.fav?'active':''}" onclick="toggleFav(event,${r.id})">${r.fav?'❤️':'🤍'}</button>
-    </div>`).join('');
+      <button class="fav-btn ${r.fav?'active':''}" onclick="toggleFav(event,'${r.id}')">${r.fav?'❤️':'🤍'}</button>
+    </div>`;
+  }).join('');
 }
 function selectCard(id){document.querySelectorAll('.restaurant-card').forEach(c=>c.classList.remove('selected'));document.getElementById(`card-${id}`)?.classList.add('selected');switchView('map');setTimeout(()=>focusMarker(id),200);}
-function toggleFav(e,id){e.stopPropagation();const r=RESTAURANTS.find(x=>x.id===id);r.fav=!r.fav;saveData();renderList();}
+async function toggleFav(e,id){e.stopPropagation();const r=RESTAURANTS.find(x=>x.id===id);r.fav=!r.fav;await fsUpdate(id,{fav:r.fav});renderList();}
 function showFavs(){showFavsOnly=true;activeFilter='all';['nav-list','nav-map','nav-admin'].forEach(id=>document.getElementById(id).classList.remove('active'));document.getElementById('nav-fav').classList.add('active');if(currentView==='map')switchView('list');else{renderFilters();renderList();}}
+
+// ===================== REVIEW =====================
+let currentReviewRestId=null, currentStar=0, reviewUnsubscribe=null;
+
+function openReviewModal(e,id){
+  e.stopPropagation();
+  const r=RESTAURANTS.find(x=>x.id===id);
+  if(!r)return;
+  currentReviewRestId=id;
+  currentStar=0;
+  document.getElementById('rv-name').textContent=`${r.emoji} ${r.name}`;
+  document.getElementById('rv-sub').textContent=r.menu;
+  document.getElementById('rv-comment').value='';
+  updateStarUI(0);
+  document.getElementById('review-modal').classList.add('show');
+  loadReviews(id);
+}
+
+function closeReviewModal(){
+  document.getElementById('review-modal').classList.remove('show');
+  if(reviewUnsubscribe){reviewUnsubscribe();reviewUnsubscribe=null;}
+  currentReviewRestId=null;
+}
+
+document.getElementById('review-modal').addEventListener('click',function(e){if(e.target===this)closeReviewModal();});
+
+function setStar(n){
+  currentStar=n;
+  updateStarUI(n);
+}
+function updateStarUI(n){
+  document.querySelectorAll('.star-btn').forEach((btn,i)=>btn.classList.toggle('active',i<n));
+}
+
+function loadReviews(restId){
+  if(reviewUnsubscribe){reviewUnsubscribe();reviewUnsubscribe=null;}
+  const db=window._db;
+  const reviewCol=window._fsCollection(db,`restaurants/${restId}/reviews`);
+  reviewUnsubscribe=window._fsOnSnapshot(reviewCol,(snap)=>{
+    const reviews=[];
+    snap.forEach(d=>reviews.push({id:d.id,...d.data()}));
+    reviews.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    renderReviews(reviews,restId);
+  });
+}
+
+function renderReviews(reviews,restId){
+  const r=RESTAURANTS.find(x=>x.id===restId);
+  if(!r)return;
+  const cnt=reviews.length;
+  const avg=cnt>0?(reviews.reduce((s,rv)=>s+(rv.rating||0),0)/cnt):0;
+  // 카드 캐시 업데이트
+  r._reviewCount=cnt; r._avgRating=avg;
+  // 평균 표시
+  const avgEl=document.getElementById('rv-avg');
+  if(cnt>0){
+    avgEl.style.display='flex';
+    document.getElementById('rv-score').textContent=avg.toFixed(1);
+    document.getElementById('rv-stars').textContent='★'.repeat(Math.round(avg))+'☆'.repeat(5-Math.round(avg));
+    document.getElementById('rv-count').textContent=`리뷰 ${cnt}개`;
+  } else {
+    avgEl.style.display='none';
+  }
+  // 리뷰 목록
+  const listEl=document.getElementById('rv-list');
+  if(!cnt){listEl.innerHTML='<div class="review-empty">아직 리뷰가 없어요. 첫 리뷰를 남겨주세요! 🍽️</div>';return;}
+  listEl.innerHTML=reviews.map(rv=>{
+    const stars='★'.repeat(rv.rating||0)+'☆'.repeat(5-(rv.rating||0));
+    const date=rv.createdAt?new Date(rv.createdAt).toLocaleDateString('ko-KR',{month:'short',day:'numeric'}):'';
+    return `<div class="review-item">
+      <div class="review-item-header">
+        <div class="review-item-name">${rv.writer||'익명'}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="review-item-stars">${stars}</span>
+          <span class="review-item-date">${date}</span>
+        </div>
+      </div>
+      ${rv.comment?`<div class="review-item-text">${rv.comment}</div>`:''}
+    </div>`;
+  }).join('');
+  // 리스트 카드도 갱신
+  renderList();
+}
+
+async function submitReview(){
+  if(!currentReviewRestId)return;
+  if(!currentStar){alert('별점을 선택해주세요!');return;}
+  const writer=document.getElementById('rv-writer').value.trim()||'익명';
+  const comment=document.getElementById('rv-comment').value.trim();
+  const btn=document.getElementById('rv-submit-btn');
+  btn.disabled=true;btn.textContent='등록 중...';
+  try {
+    const db=window._db;
+    const reviewCol=window._fsCollection(db,`restaurants/${currentReviewRestId}/reviews`);
+    await window._fsAddDoc(reviewCol,{writer,comment,rating:currentStar,createdAt:Date.now()});
+    document.getElementById('rv-comment').value='';
+    currentStar=0;updateStarUI(0);
+  } catch(e){alert('등록 실패: '+e.message);}
+  btn.disabled=false;btn.textContent='리뷰 등록';
+}
 
 // ===================== RANDOM =====================
 function pickRandom(){const f=getFiltered();if(!f.length)return;const r=f[Math.floor(Math.random()*f.length)];document.getElementById('modal-emoji').textContent=r.emoji;document.getElementById('modal-name').textContent=r.name;document.getElementById('modal-menu').textContent=r.menu;document.getElementById('modal-dist').textContent=r.distance!==undefined?`📍 ${formatDist(r.distance)} · 🚶 ${walkTime(r.distance)}`:'';document.getElementById('modal').classList.add('show');}
@@ -797,7 +1059,7 @@ function setBreak(prefix,isNone){
 }
 
 // ===================== 식당 추가/삭제 =====================
-function addRestaurant(){
+async function addRestaurant(){
   const name=document.getElementById('add-name').value.trim();
   const menu=document.getElementById('add-menu').value.trim();
   const cat=document.getElementById('add-cat').value;
@@ -808,25 +1070,35 @@ function addRestaurant(){
   const breakTime=breakNone?null:getTimePicker('add-boh','add-bom','add-bch','add-bcm');
   if(!name||!menu){alert('상호명과 메뉴를 입력해주세요.');return;}
   if(!foundLat){alert('먼저 위치를 검색하거나 지도에서 위치를 탭해주세요.');return;}
-  const newR={id:Date.now(),name,emoji:selectedEmoji,menu,category:cat,tags,price,lat:foundLat,lng:foundLng,hours,breakTime,fav:false};
-  if(userLat)newR.distance=haversine(userLat,userLng,foundLat,foundLng);
-  RESTAURANTS.push(newR);saveData();
-  if(kakaoMap)addKakaoMarker(newR);
-  ['add-name','add-menu','add-tags'].forEach(id=>document.getElementById(id).value='');
-  ['msg-ok','msg-fail','add-fields','picker-wrap','picker-confirm'].forEach(id=>document.getElementById(id).classList.remove('show'));
-  setBreak('add',true);
-  foundLat=null;foundLng=null;selectedEmoji='🍜';buildEmojiPicker();
-  renderFilters();renderList();if(kakaoMap)renderMapCards();renderAdminList();
-  alert(`✅ "${name}" 추가 완료!`);
+  const btn=document.querySelector('.add-btn');
+  btn.textContent='저장 중...';btn.disabled=true;
+  const data={name,emoji:selectedEmoji,menu,category:cat,tags,price,lat:foundLat,lng:foundLng,hours,breakTime:breakTime||null,fav:false};
+  try {
+    const newId=await fsAdd(data);
+    const newR={id:newId,...data};
+    if(userLat)newR.distance=haversine(userLat,userLng,foundLat,foundLng);
+    RESTAURANTS.push(newR);
+    if(kakaoMap)addKakaoMarker(newR);
+    ['add-name','add-menu','add-tags'].forEach(id=>document.getElementById(id).value='');
+    ['msg-ok','msg-fail','add-fields','picker-wrap','picker-confirm'].forEach(id=>document.getElementById(id).classList.remove('show'));
+    setBreak('add',true);
+    foundLat=null;foundLng=null;selectedEmoji='🍜';buildEmojiPicker();
+    renderFilters();renderList();if(kakaoMap)renderMapCards();renderAdminList();
+    alert(`✅ "${name}" 추가 완료!`);
+  } catch(e){alert('저장 실패: '+e.message);}
+  btn.textContent='+ 리스트에 추가';btn.disabled=false;
 }
 
-function deleteRestaurant(id){
+async function deleteRestaurant(id){
   const r=RESTAURANTS.find(x=>x.id===id);
   if(!confirm(`"${r.name}"을 삭제할까요?`))return;
-  RESTAURANTS=RESTAURANTS.filter(x=>x.id!==id);
-  const oi=kakaoOverlays.findIndex(o=>o.id===id);
-  if(oi!==-1){kakaoOverlays[oi].overlay.setMap(null);kakaoOverlays.splice(oi,1);}
-  saveData();renderFilters();renderList();if(kakaoMap)renderMapCards();renderAdminList();
+  try {
+    await fsDelete(id);
+    RESTAURANTS=RESTAURANTS.filter(x=>x.id!==id);
+    const oi=kakaoOverlays.findIndex(o=>o.id===id);
+    if(oi!==-1){kakaoOverlays[oi].overlay.setMap(null);kakaoOverlays.splice(oi,1);}
+    renderFilters();renderList();if(kakaoMap)renderMapCards();renderAdminList();
+  } catch(e){alert('삭제 실패: '+e.message);}
 }
 
 // ===================== 수정 모달 =====================
@@ -841,35 +1113,40 @@ function openEditModal(id){
   document.getElementById('edit-cat').value=r.category;
   document.getElementById('edit-price').value=r.price;
   document.getElementById('edit-tags').value=r.tags.join(', ');
-  // 시간 피커 설정
   setTimePicker('edit-oh','edit-om','edit-ch','edit-cm',r.hours||'09:00 - 21:00');
   const hasBreak=!!r.breakTime;
   setBreak('edit',!hasBreak);
   if(hasBreak)setTimePicker('edit-boh','edit-bom','edit-bch','edit-bcm',r.breakTime);
-  // 이모지 피커
   document.getElementById('edit-emoji-row').innerHTML=EMOJIS.map(e=>`<div class="emoji-opt ${e===editEmoji?'active':''}" onclick="selectEditEmoji('${e}')">${e}</div>`).join('');
   document.getElementById('edit-modal').classList.add('show');
 }
 function closeEditModal(){document.getElementById('edit-modal').classList.remove('show');}
 function selectEditEmoji(e){editEmoji=e;document.querySelectorAll('#edit-emoji-row .emoji-opt').forEach(el=>el.classList.toggle('active',el.textContent.trim()===e));}
-function saveEdit(){
-  const id=parseInt(document.getElementById('edit-id').value);
+async function saveEdit(){
+  const id=document.getElementById('edit-id').value;
   const r=RESTAURANTS.find(x=>x.id===id);
   if(!r)return;
-  r.emoji=editEmoji;
-  r.name=document.getElementById('edit-name').value.trim();
-  r.menu=document.getElementById('edit-menu').value.trim();
-  r.category=document.getElementById('edit-cat').value;
-  r.price=document.getElementById('edit-price').value;
-  r.tags=document.getElementById('edit-tags').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
-  r.hours=getTimePicker('edit-oh','edit-om','edit-ch','edit-cm');
-  const editBreakNone=document.getElementById('edit-bnone').classList.contains('active');
-  r.breakTime=editBreakNone?null:getTimePicker('edit-boh','edit-bom','edit-bch','edit-bcm');
-  saveData();
-  const oi=kakaoOverlays.findIndex(o=>o.id===id);
-  if(oi!==-1){kakaoOverlays[oi].overlay.setMap(null);kakaoOverlays.splice(oi,1);if(kakaoMap)addKakaoMarker(r);}
-  renderFilters();renderList();if(kakaoMap)renderMapCards();renderAdminList();
-  closeEditModal();
+  const updated={
+    emoji:editEmoji,
+    name:document.getElementById('edit-name').value.trim(),
+    menu:document.getElementById('edit-menu').value.trim(),
+    category:document.getElementById('edit-cat').value,
+    price:document.getElementById('edit-price').value,
+    tags:document.getElementById('edit-tags').value.trim().split(',').map(t=>t.trim()).filter(Boolean),
+    hours:getTimePicker('edit-oh','edit-om','edit-ch','edit-cm'),
+    breakTime:document.getElementById('edit-bnone').classList.contains('active')?null:getTimePicker('edit-boh','edit-bom','edit-bch','edit-bcm')
+  };
+  const saveBtn=document.querySelector('.edit-save-btn');
+  saveBtn.textContent='저장 중...';saveBtn.disabled=true;
+  try {
+    await fsUpdate(id,updated);
+    Object.assign(r,updated);
+    const oi=kakaoOverlays.findIndex(o=>o.id===id);
+    if(oi!==-1){kakaoOverlays[oi].overlay.setMap(null);kakaoOverlays.splice(oi,1);if(kakaoMap)addKakaoMarker(r);}
+    renderFilters();renderList();if(kakaoMap)renderMapCards();renderAdminList();
+    closeEditModal();
+  } catch(e){alert('수정 실패: '+e.message);}
+  saveBtn.textContent='저장하기';saveBtn.disabled=false;
 }
 document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)closeEditModal();});
 
@@ -895,7 +1172,15 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('.search-wrap'))document.getElementById('search-dropdown').classList.remove('show');
 });
 
-renderFilters();initLocation();
+renderFilters();
+initLocation();
+
+// Firebase 준비되면 데이터 로드
+if(window._dbReady){
+  loadFromFirestore();
+} else {
+  window.addEventListener('db-ready', loadFromFirestore);
+}
 </script>
 </body>
 </html>
